@@ -7,6 +7,7 @@
         <result column="user_id" property="userId"/>
         <result column="comments" property="comments"/>
         <result column="view" property="view"/>
+        <result column="like_count" property="likeCount"/>
         <result column="collects" property="collects"/>
         <result column="top" property="top"/>
         <result column="essence" property="essence"/>
@@ -20,7 +21,7 @@
     <select id="selectListAndPage" resultMap="topicVO">
         SELECT
         t.id,t.title,t.user_id,t.comments,
-        t.view,t.collects,t.top,t.essence,
+        t.view,t.like_count,t.collects,t.top,t.essence,
         t.create_time ,t.modify_time ,
         u.username,u.alias, u.avatar
         FROM bms_post t
@@ -54,6 +55,7 @@
         t.user_id,
         t.comments,
         t.view,
+        t.like_count,
         t.collects,
         t.top,
         t.essence,

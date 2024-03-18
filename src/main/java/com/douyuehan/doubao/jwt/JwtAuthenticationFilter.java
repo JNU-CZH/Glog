@@ -20,15 +20,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         try {
+            // 检查请求的URL是否受保护
             if(isProtectedUrl(request)) {
 //                System.out.println(request.getMethod());
+                // 如果请求方法不是OPTIONS，则验证JWT令牌并将用户ID添加到请求头中
                 if(!request.getMethod().equals("OPTIONS"))
                     request = JwtUtil.validateTokenAndAddUserIdToHeader(request);
             }
         } catch (Exception e) {
+            // 如果在验证JWT令牌时发生异常，返回401未授权错误
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
             return;
         }
+        // 继续处理请求
         filterChain.doFilter(request, response);
     }
 

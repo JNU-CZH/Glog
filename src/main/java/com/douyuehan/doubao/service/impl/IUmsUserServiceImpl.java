@@ -64,12 +64,15 @@ public class IUmsUserServiceImpl extends ServiceImpl<UmsUserMapper, UmsUser> imp
     public String executeLogin(LoginDTO dto) {
         String token = null;
         try {
+            // 检查用户是否存在
             UmsUser user = getUserByUsername(dto.getUsername());
             String encodePwd = MD5Utils.getPwd(dto.getPassword());
+            // 判断密码是否正确
             if(!encodePwd.equals(user.getPassword()))
             {
                 throw new Exception("密码错误");
             }
+            // 生成token
             token = JwtUtil.generateToken(String.valueOf(user.getUsername()));
         } catch (Exception e) {
             log.warn("用户不存在or密码验证失败=======>{}", dto.getUsername());

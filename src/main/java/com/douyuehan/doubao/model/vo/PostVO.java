@@ -65,6 +65,10 @@ public class PostVO implements Serializable {
      */
     private Integer view;
     /**
+     * 浏览量
+     */
+    private Integer likeCount;
+    /**
      * 创建时间
      */
     private Date createTime;

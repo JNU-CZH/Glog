@@ -45,6 +45,10 @@ public class BmsPostController extends BaseController {
         BmsPost topic = iBmsPostService.create(dto, user);
         return ApiResult.success(topic);
     }
+
+    /**
+     * 获取文章详情
+     * */
     @GetMapping()
     public ApiResult<Map<String, Object>> view(@RequestParam("id") String id) {
         Map<String, Object> map = iBmsPostService.viewTopic(id);

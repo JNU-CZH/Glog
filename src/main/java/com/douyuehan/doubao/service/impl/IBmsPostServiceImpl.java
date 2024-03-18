@@ -92,6 +92,8 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
         Assert.notNull(topic, "当前话题不存在,或已被作者删除");
         // 查询话题详情
         topic.setView(topic.getView() + 1);
+        // todo: 点赞操作
+        topic.setLikeCount(topic.getLikeCount() + 1);
         this.baseMapper.updateById(topic);
         // emoji转码
         topic.setContent(EmojiParser.parseToUnicode(topic.getContent()));
