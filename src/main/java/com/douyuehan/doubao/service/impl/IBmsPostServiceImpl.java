@@ -2,6 +2,7 @@ package com.douyuehan.doubao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.api.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.douyuehan.doubao.mapper.BmsTagMapper;
@@ -17,9 +18,11 @@ import com.douyuehan.doubao.model.vo.ProfileVO;
 import com.douyuehan.doubao.service.IBmsPostService;
 import com.douyuehan.doubao.service.IBmsTagService;
 import com.douyuehan.doubao.service.IUmsUserService;
+import com.douyuehan.doubao.utils.HostHolder;
 import com.vdurmont.emoji.EmojiParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -44,12 +47,36 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
     @Autowired
     private IUmsUserService iUmsUserService;
 
+    @Resource
+    private RedisTemplate redisTemplate;
+
+    @Resource
+    private HostHolder hostHolder;
+
     @Autowired
     private com.douyuehan.doubao.service.IBmsTopicTagService IBmsTopicTagService;
     @Override
     public Page<PostVO> getList(Page<PostVO> page, String tab) {
         // 查询话题
         Page<PostVO> iPage = this.baseMapper.selectListAndPage(page, tab);
+        // 浏览量的处理
+        // 遍历每个文章记录
+        // todo：是否要这边处理，或是直接redis异步刷盘就好
+        for (PostVO post : iPage.getRecords()) {
+            // 根据文章id从Redis获取浏览量
+            String viewCountKey = "view" + post.getId();
+            Integer viewCount = (Integer) redisTemplate.opsForValue().get(viewCountKey);
+
+            // 如果Redis中没有浏览量记录，则初始化为0
+            if (viewCount == null) {
+                viewCount = 0;
+            }
+
+            // 更新文章的浏览量
+            post.setView(viewCount);
+            // 在Redis中重置浏览量
+            redisTemplate.opsForValue().set(viewCountKey, 0);
+        }
         // 查询话题的标签
         setTopicTags(iPage);
         return iPage;
@@ -85,15 +112,31 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
         return topic;
     }
 
+    /**
+     * 获取文章详情
+     * */
     @Override
-    public Map<String, Object> viewTopic(String id) {
+    public Map<String, Object> viewTopic(String id, String username) {
         Map<String, Object> map = new HashMap<>(16);
+        // 查询话题详情
         BmsPost topic = this.baseMapper.selectById(id);
         Assert.notNull(topic, "当前话题不存在,或已被作者删除");
-        // 查询话题详情
-        topic.setView(topic.getView() + 1);
-        // todo: 点赞操作
-        topic.setLikeCount(topic.getLikeCount() + 1);
+//        topic.setView(topic.getView() + 1);
+        // 浏览量和点赞量，按照2个小时刷盘一次
+        redisTemplate.opsForValue().increment("view" + id);
+        map.put("view", redisTemplate.opsForValue().get("view" + id));
+        // todo: 点赞状态（抽离出来充当点赞状态判断）
+        // 点赞状态：通过set数据结构来存储，key：文章id，value：set（userId、userId2.....）
+        Boolean member = redisTemplate.opsForSet().isMember(id, username);
+        // 存在的话
+        if (member) {
+            map.put("likeStatus", 1);
+        } else {
+            map.put("likeStatus", 0);
+        }
+        long count = redisTemplate.opsForSet().size(id);
+        topic.setLikeCount((int) count);
+        map.put("likeCount", redisTemplate.opsForSet().size(id));
         this.baseMapper.updateById(topic);
         // emoji转码
         topic.setContent(EmojiParser.parseToUnicode(topic.getContent()));
@@ -113,6 +156,22 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
         ProfileVO user = iUmsUserService.getUserProfile(topic.getUserId());
         map.put("user", user);
 
+        return map;
+    }
+
+    @Override
+    public Map<String, Object> like(String id, String username, Integer newStatus) {
+        Map<String, Object> map = new HashMap<>(2);
+        // 判断当前状态
+        if (newStatus == 0) {
+            redisTemplate.opsForSet().add(id, username);
+            map.put("likeStatus", 1);
+
+        } else {
+            redisTemplate.opsForSet().remove(id, username);
+            map.put("likeStatus", 0);
+        }
+        map.put("likeCount", redisTemplate.opsForSet().size(id));
         return map;
     }
 

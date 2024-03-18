@@ -48,10 +48,25 @@ public class BmsPostController extends BaseController {
 
     /**
      * 获取文章详情
+     *
+     * @param id 文章id
+     * @return ApiResult<Map<String, Object>> map存储基本信息
      * */
     @GetMapping()
-    public ApiResult<Map<String, Object>> view(@RequestParam("id") String id) {
-        Map<String, Object> map = iBmsPostService.viewTopic(id);
+    public ApiResult<Map<String, Object>> view(@RequestParam("id") String id, @RequestParam("username") String username) {
+        Map<String, Object> map = iBmsPostService.viewTopic(id, username);
+        return ApiResult.success(map);
+    }
+
+    /**
+     * 点赞文章与取消点赞
+     *
+     * @param id,username,newStatus 文章id、用户id、新状态
+     * @return ApiResult<Map<String, Object>> map存储基本信息
+     * */
+    @GetMapping("/like")
+    public ApiResult<Map<String, Object>> like(@RequestParam("id") String id, @RequestParam("username") String username, @RequestParam("newStatus") Integer newStatus) {
+        Map<String, Object> map = iBmsPostService.like(id, username, newStatus);
         return ApiResult.success(map);
     }
 

@@ -36,7 +36,15 @@ public interface IBmsPostService extends IService<BmsPost> {
      * @param id
      * @return
      */
-    Map<String, Object> viewTopic(String id);
+    Map<String, Object> viewTopic(String id, String username);
+    /**
+     * 点赞文章
+     *
+     * @param id
+     * @return
+     */
+    Map<String, Object> like(String id, String username, Integer newStatus);
+
     /**
      * 获取随机推荐10篇
      *

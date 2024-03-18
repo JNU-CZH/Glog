@@ -11,7 +11,7 @@ import java.util.*;
 
 public class JwtUtil {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
-    public static final long EXPIRATION_TIME = 3600_000L; // 1 hour
+    public static final long EXPIRATION_TIME = 3600_000_0L; // 1 hour
     public static final String SECRET = "ThisIsASecret";//please change to your own encryption secret.
     public static final String TOKEN_PREFIX = "Bearer ";
     public static final String HEADER_STRING = "Authorization";
@@ -49,20 +49,27 @@ public class JwtUtil {
         }
     }
 
+    // 自定义HttpServletRequest类，继承自HttpServletRequestWrapper
     public static class CustomHttpServletRequest extends HttpServletRequestWrapper {
+        // 用于存储JWT载荷中的声明
         private Map<String, String> claims;
 
+        // 构造函数，接收一个HttpServletRequest对象和一个Map对象，Map对象包含JWT载荷中的声明
         public CustomHttpServletRequest(HttpServletRequest request, Map<String, ?> claims) {
-            super(request);
+            super(request); // 调用父类的构造函数
             this.claims = new HashMap<>();
+            // 将Map对象中的声明转换为字符串，并存储在claims中
             claims.forEach((k, v) -> this.claims.put(k, String.valueOf(v)));
         }
 
+        // 重写getHeaders方法
         @Override
         public Enumeration<String> getHeaders(String name) {
+            // 如果claims中包含指定的声明，那么返回这个声明的值
             if (claims != null && claims.containsKey(name)) {
                 return Collections.enumeration(Arrays.asList(claims.get(name)));
             }
+            // 否则，调用父类的getHeaders方法
             return super.getHeaders(name);
         }
 

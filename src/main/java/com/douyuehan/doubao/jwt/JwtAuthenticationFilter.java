@@ -1,9 +1,13 @@
 package com.douyuehan.doubao.jwt;
 
+import com.douyuehan.doubao.utils.HostHolder;
+import io.jsonwebtoken.Jwts;
+import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import javax.annotation.Resource;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -11,7 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Map;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final PathMatcher pathMatcher = new AntPathMatcher();

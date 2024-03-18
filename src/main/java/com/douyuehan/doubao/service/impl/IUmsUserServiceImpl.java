@@ -14,6 +14,7 @@ import com.douyuehan.doubao.model.entity.BmsPost;
 import com.douyuehan.doubao.model.entity.UmsUser;
 import com.douyuehan.doubao.model.vo.ProfileVO;
 import com.douyuehan.doubao.service.IUmsUserService;
+import com.douyuehan.doubao.utils.HostHolder;
 import com.douyuehan.doubao.utils.MD5Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -34,6 +35,9 @@ public class IUmsUserServiceImpl extends ServiceImpl<UmsUserMapper, UmsUser> imp
     private BmsTopicMapper bmsTopicMapper;
     @Autowired
     private BmsFollowMapper bmsFollowMapper;
+
+    @Autowired
+    private HostHolder hostHolder;
 
     @Override
     public UmsUser executeRegister(RegisterDTO dto) {
