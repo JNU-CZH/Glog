@@ -18,7 +18,9 @@ import com.douyuehan.doubao.model.vo.ProfileVO;
 import com.douyuehan.doubao.service.IBmsPostService;
 import com.douyuehan.doubao.service.IBmsTagService;
 import com.douyuehan.doubao.service.IUmsUserService;
+import com.douyuehan.doubao.utils.DFASensitiveFilter;
 import com.douyuehan.doubao.utils.HostHolder;
+import com.douyuehan.doubao.utils.TrieSensitiveFilter;
 import com.vdurmont.emoji.EmojiParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -53,7 +55,10 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
     private RedisTemplate redisTemplate;
 
     @Resource
-    private HostHolder hostHolder;
+    private TrieSensitiveFilter trieSensitiveFilter;
+
+    @Resource
+    private DFASensitiveFilter dfaSensitiveFilter;
 
     @Autowired
     private com.douyuehan.doubao.service.IBmsTopicTagService IBmsTopicTagService;
@@ -106,12 +111,30 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
         BmsPost topic1 = this.baseMapper.selectOne(new LambdaQueryWrapper<BmsPost>().eq(BmsPost::getTitle, dto.getTitle()));
         Assert.isNull(topic1, "话题已存在，请修改");
 
+        // 敏感词过滤: DFA有限自动机
+        String title = dfaSensitiveFilter.filter(dto.getTitle());
+        String content = dfaSensitiveFilter.filter(dto.getContent());
+
+//        // 获取开始时间
+//        long startTime = System.currentTimeMillis();
+//
+////        // 敏感词过滤: 字典树
+////        String title = trieSensitiveFilter.filter(dto.getTitle());
+////        String content = trieSensitiveFilter.filter(dto.getContent());
+//
+//        // 获取结束时间
+//        long endTime = System.currentTimeMillis();
+//
+//        // 计算执行时间
+//        long executionTime = endTime - startTime;
+//
+//        System.out.println("Execution time: " + executionTime + " milliseconds");
 
         // 封装
         BmsPost topic = BmsPost.builder()
                 .userId(user.getId())
-                .title(dto.getTitle())
-                .content(EmojiParser.parseToAliases(dto.getContent()))
+                .title(title)
+                .content(EmojiParser.parseToAliases(content))
                 .createTime(new Date())
                 .build();
         this.baseMapper.insert(topic);
