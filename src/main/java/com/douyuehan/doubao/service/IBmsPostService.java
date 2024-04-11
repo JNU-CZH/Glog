@@ -9,6 +9,7 @@ import com.douyuehan.doubao.model.vo.PostVO;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 public interface IBmsPostService extends IService<BmsPost> {
@@ -60,4 +61,23 @@ public interface IBmsPostService extends IService<BmsPost> {
      * @return
      */
     Page<PostVO> searchByKey(String keyword, Page<PostVO> page);
+
+    /**
+     * 文章信息
+     *
+     * @param
+     * @param id
+     * @return BmsPost
+     */
+    BmsPost selectById(String id);
+
+    /**
+     * 批量获取文章信息
+     *
+     * @param ids
+     * @return List<BmsPost>
+     */
+    List<BmsPost> selectBatchIds(Set ids);
+
+
 }

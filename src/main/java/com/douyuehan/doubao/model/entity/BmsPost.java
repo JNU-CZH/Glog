@@ -73,6 +73,13 @@ public class BmsPost implements Serializable {
     private Integer likeCount = 0;
 
     /**
+     * 分数
+     */
+    @TableField("score")
+    @Builder.Default
+    private Double score = 0.0;
+
+    /**
      * 专栏ID，默认不分栏
      */
     @TableField("section_id")

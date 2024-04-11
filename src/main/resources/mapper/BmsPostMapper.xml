@@ -41,6 +41,26 @@
         </if>
     </select>
 
+    <select id="selectHotList" resultMap="topicVO">
+        SELECT
+        t.id,t.title,t.user_id,t.comments,
+        t.view,t.like_count,t.collects,t.top,t.essence,
+        t.create_time ,t.modify_time ,
+        u.username,u.alias, u.avatar
+        FROM bms_post t
+        LEFT JOIN ums_user u
+        ON t.user_id = u.id
+        <where>
+            <if test="tab == 'hot'">
+                date(t.create_time) &lt;= date_add(curdate(), interval 1 day)
+                and date(t.create_time) &gt;= date_sub(curdate(), interval 7 day)
+            </if>
+        </where>
+        <if test="tab == 'hot'">
+            order by t.score desc, t.create_time desc
+        </if>
+    </select>
+
     <select id="selectRecommend" resultType="com.douyuehan.doubao.model.entity.BmsPost">
         select *
         from bms_post t

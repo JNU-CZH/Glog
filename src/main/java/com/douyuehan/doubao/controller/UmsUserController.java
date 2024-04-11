@@ -11,6 +11,8 @@ import com.douyuehan.doubao.model.entity.UmsUser;
 import com.douyuehan.doubao.service.IBmsPostService;
 import com.douyuehan.doubao.service.IUmsUserService;
 import com.douyuehan.doubao.utils.HostHolder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.util.Assert;
@@ -29,9 +31,6 @@ public class UmsUserController extends BaseController {
     private IUmsUserService iUmsUserService;
     @Resource
     private IBmsPostService iBmsPostService;
-
-    @Resource
-    private HostHolder hostHolder;
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public ApiResult<Map<String, Object>> register(@Valid @RequestBody RegisterDTO dto) {
@@ -65,8 +64,6 @@ public class UmsUserController extends BaseController {
 
     @RequestMapping(value = "/logout", method = RequestMethod.GET)
     public ApiResult<Object> logOut() {
-        // 移除hostHolder中的用户信息
-        hostHolder.clear();
         return ApiResult.success(null, "注销成功");
     }
 

@@ -1,14 +1,20 @@
 package com.douyuehan.doubao.controller;
 
+import com.baomidou.mybatisplus.extension.api.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.douyuehan.doubao.common.api.ApiResult;
+import com.douyuehan.doubao.model.dto.CommentDTO;
 import com.douyuehan.doubao.model.dto.CreateTopicDTO;
+import com.douyuehan.doubao.model.entity.BmsComment;
 import com.douyuehan.doubao.model.entity.BmsPost;
 import com.douyuehan.doubao.model.entity.UmsUser;
 import com.douyuehan.doubao.model.vo.PostVO;
+import com.douyuehan.doubao.service.IBmsCommentService;
 import com.douyuehan.doubao.service.IBmsPostService;
 import com.douyuehan.doubao.service.IUmsUserService;
 import com.vdurmont.emoji.EmojiParser;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
@@ -17,6 +23,9 @@ import javax.validation.Valid;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static com.douyuehan.doubao.jwt.JwtUtil.USER_NAME;
 
@@ -39,12 +48,15 @@ public class BmsPostController extends BaseController {
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
+    @Transactional(rollbackFor = RuntimeException.class)
     public ApiResult<BmsPost> create(@RequestHeader(value = USER_NAME) String userName
             , @RequestBody CreateTopicDTO dto) {
         UmsUser user = umsUserService.getUserByUsername(userName);
         BmsPost topic = iBmsPostService.create(dto, user);
         return ApiResult.success(topic);
     }
+
+
 
     /**
      * 获取文章详情

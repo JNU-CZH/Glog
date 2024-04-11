@@ -22,7 +22,9 @@ import com.douyuehan.doubao.utils.HostHolder;
 import com.vdurmont.emoji.EmojiParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -57,10 +59,25 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
     private com.douyuehan.doubao.service.IBmsTopicTagService IBmsTopicTagService;
     @Override
     public Page<PostVO> getList(Page<PostVO> page, String tab) {
-        // 查询话题
-        Page<PostVO> iPage = this.baseMapper.selectListAndPage(page, tab);
+        System.out.println("现在时间" + new Date());
+        Page<PostVO> iPage = new Page<>();
+        if (!tab.equals("hot")) { // 如果是最新数据，走数据库查询
+            // 查询话题
+            iPage = this.baseMapper.selectListAndPage(page, tab);
+        } else {
+            // 查询热门数据
+            List<PostVO> hotPosts = (List) redisTemplate.opsForList().range("hot_list", 0, -1);
+
+            if (hotPosts == null) { //查数据库
+                iPage = this.baseMapper.selectHotList(page, tab);
+            } else {
+                System.out.println("我使用的是redis哦");
+                iPage.setRecords(hotPosts);
+                iPage.setTotal(hotPosts.size());
+                iPage.setCurrent(1);
+            }
+        }
         // 浏览量的处理
-        // 遍历每个文章记录
         // todo：是否要这边处理，或是直接redis异步刷盘就好
         for (PostVO post : iPage.getRecords()) {
             // 根据文章id从Redis获取浏览量
@@ -75,10 +92,11 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
             // 更新文章的浏览量
             post.setView(viewCount);
             // 在Redis中重置浏览量
-            redisTemplate.opsForValue().set(viewCountKey, 0);
+            redisTemplate.opsForValue().set(viewCountKey, viewCount);
         }
         // 查询话题的标签
         setTopicTags(iPage);
+        System.out.println("方法结束时间" + new Date());
         return iPage;
     }
 
@@ -88,6 +106,7 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
         BmsPost topic1 = this.baseMapper.selectOne(new LambdaQueryWrapper<BmsPost>().eq(BmsPost::getTitle, dto.getTitle()));
         Assert.isNull(topic1, "话题已存在，请修改");
 
+
         // 封装
         BmsPost topic = BmsPost.builder()
                 .userId(user.getId())
@@ -96,6 +115,11 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
                 .createTime(new Date())
                 .build();
         this.baseMapper.insert(topic);
+
+        // 使用ZSet存储文章id : 文章分数
+        // todo: 可能存在问题，topic的id还未拿到
+        // todo：如果刷新文章的时候不会每次都刷新到无用的文章
+        redisTemplate.opsForSet().add("active_topic", topic.getId());
 
         // 用户积分增加
         int newScore = user.getScore() + 1;
@@ -120,6 +144,8 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
         Map<String, Object> map = new HashMap<>(16);
         // 查询话题详情
         BmsPost topic = this.baseMapper.selectById(id);
+        // 添加到文章活跃列表 --- 要更新分数
+        redisTemplate.opsForSet().add("active_topic", id);
         Assert.notNull(topic, "当前话题不存在,或已被作者删除");
 //        topic.setView(topic.getView() + 1);
         // 浏览量和点赞量，按照2个小时刷盘一次
@@ -186,6 +212,19 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
         // 查询话题的标签
         setTopicTags(iPage);
         return iPage;
+    }
+
+    @Override
+    public BmsPost selectById(String id) {
+        return this.baseMapper.selectById(id);
+    }
+
+    @Override
+    public List<BmsPost> selectBatchIds(Set ids) {
+        QueryWrapper<BmsPost> queryWrapper = new QueryWrapper<>();
+        ArrayList<String> idList= new ArrayList<>(ids);
+        queryWrapper.in("id", idList);
+        return this.baseMapper.selectList(queryWrapper);
     }
 
     private void setTopicTags(Page<PostVO> iPage) {

@@ -8,9 +8,11 @@ import com.douyuehan.doubao.model.entity.UmsUser;
 import com.douyuehan.doubao.model.vo.CommentVO;
 import com.douyuehan.doubao.service.IBmsCommentService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -19,6 +21,10 @@ import java.util.List;
 @Slf4j
 @Service
 public class IBmsCommentServiceImpl extends ServiceImpl<BmsCommentMapper, BmsComment> implements IBmsCommentService {
+
+    @Resource
+    private RedisTemplate redisTemplate;
+
     @Override
     public List<CommentVO> getCommentsByTopicID(String topicid) {
         List<CommentVO> lstBmsComment = new ArrayList<CommentVO>();
@@ -31,8 +37,9 @@ public class IBmsCommentServiceImpl extends ServiceImpl<BmsCommentMapper, BmsCom
     }
 
     @Override
+    @Transactional(rollbackFor = RuntimeException.class)
     public BmsComment create(CommentDTO dto, UmsUser user) {
-        BmsComment comment = BmsComment.builder()
+        BmsComment comment  = BmsComment.builder()
                 .userId(user.getId())
                 .content(dto.getContent())
                 .topicId(dto.getTopic_id())
