@@ -14,6 +14,7 @@ import com.douyuehan.doubao.service.IBmsPostService;
 import com.douyuehan.doubao.service.IUmsUserService;
 import com.douyuehan.doubao.utils.BloomFilterUtil;
 import com.vdurmont.emoji.EmojiParser;
+import org.redisson.Redisson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -46,7 +47,7 @@ public class BmsPostController extends BaseController {
     @GetMapping("/list")
     public ApiResult<Page<PostVO>> list(@RequestParam(value = "tab", defaultValue = "latest") String tab,
                                         @RequestParam(value = "pageNo", defaultValue = "1")  Integer pageNo,
-                                        @RequestParam(value = "size", defaultValue = "10") Integer pageSize) {
+                                        @RequestParam(value = "size", defaultValue = "10") Integer pageSize) throws InterruptedException {
         Page<PostVO> list = iBmsPostService.getList(new Page<>(pageNo, pageSize), tab);
         return ApiResult.success(list);
     }

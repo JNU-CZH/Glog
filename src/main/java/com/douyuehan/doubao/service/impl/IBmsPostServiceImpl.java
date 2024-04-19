@@ -22,6 +22,7 @@ import com.douyuehan.doubao.utils.DFASensitiveFilter;
 import com.douyuehan.doubao.utils.HostHolder;
 import com.douyuehan.doubao.utils.TrieSensitiveFilter;
 import com.vdurmont.emoji.EmojiParser;
+import org.redisson.Redisson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.ListOperations;
@@ -34,7 +35,9 @@ import org.springframework.util.ObjectUtils;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.redisson.api.RLock;
 
 
 @Service
@@ -58,15 +61,42 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
     private DFASensitiveFilter dfaSensitiveFilter;
 
     @Autowired
+    private Redisson redisson;
+
+    @Autowired
     private com.douyuehan.doubao.service.IBmsTopicTagService IBmsTopicTagService;
     @Override
-    public Page<PostVO> getList(Page<PostVO> page, String tab) {
+    public Page<PostVO> getList(Page<PostVO> page, String tab) throws InterruptedException {
         System.out.println("现在时间" + new Date());
         Page<PostVO> iPage = new Page<>();
         if (!tab.equals("hot")) { // 如果是最新数据，走数据库查询
-
+            // 查询数据库的时候添加锁，避免数据库压力突增
+            // 保证只有一个线程持有锁，进行数据库查找
+            RLock lock = redisson.getLock("index_lock");
+            lock.lock();
             // 查询话题
             iPage = this.baseMapper.selectListAndPage(page, tab);
+            List<PostVO> hotPosts = iPage.getRecords();
+            // 添加到缓存中
+            for (PostVO postVO : hotPosts) {
+                redisTemplate.opsForList().leftPush("hot_list", postVO);
+            }
+            lock.unlock();
+//            if (lock.tryLock(10, 10, TimeUnit.SECONDS)) {
+//                try {
+//                    // 查询话题
+//                    iPage = this.baseMapper.selectListAndPage(page, tab);
+//                    List<PostVO> hotPosts = iPage.getRecords();
+//                    // 添加到缓存中
+//                    for (PostVO postVO : hotPosts) {
+//                        redisTemplate.opsForList().leftPush("hot_list", postVO);
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                } finally {
+//                    lock.unlock();
+//                }
+//            }
         } else {
             // 查询热门数据
             List<PostVO> hotPosts = (List) redisTemplate.opsForList().range("hot_list", 0, -1);

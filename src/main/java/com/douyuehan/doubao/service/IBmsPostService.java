@@ -21,7 +21,7 @@ public interface IBmsPostService extends IService<BmsPost> {
      * @param tab
      * @return
      */
-    Page<PostVO> getList(Page<PostVO> page, String tab);
+    Page<PostVO> getList(Page<PostVO> page, String tab) throws InterruptedException;
     /**
      * 发布
      *
