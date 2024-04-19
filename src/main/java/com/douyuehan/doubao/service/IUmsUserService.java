@@ -6,6 +6,8 @@ import com.douyuehan.doubao.model.dto.RegisterDTO;
 import com.douyuehan.doubao.model.entity.UmsUser;
 import com.douyuehan.doubao.model.vo.ProfileVO;
 
+import java.util.HashMap;
+
 
 public interface IUmsUserService extends IService<UmsUser> {
 
@@ -29,7 +31,7 @@ public interface IUmsUserService extends IService<UmsUser> {
      * @param dto
      * @return 生成的JWT的token
      */
-    String executeLogin(LoginDTO dto);
+    HashMap<String, String> executeLogin(LoginDTO dto);
     /**
      * 获取用户信息
      *

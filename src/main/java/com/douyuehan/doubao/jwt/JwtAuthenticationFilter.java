@@ -1,6 +1,7 @@
 package com.douyuehan.doubao.jwt;
 
 import com.douyuehan.doubao.utils.HostHolder;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -31,6 +32,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if(!request.getMethod().equals("OPTIONS"))
                     request = JwtUtil.validateTokenAndAddUserIdToHeader(request);
             }
+        } catch (ExpiredJwtException e) {
+            System.out.println("令牌过期！");
+            // 如果在验证JWT令牌时发现令牌已过期，进行特定的处理
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has expired");
+            return;
         } catch (Exception e) {
             // 如果在验证JWT令牌时发生异常，返回401未授权错误
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());

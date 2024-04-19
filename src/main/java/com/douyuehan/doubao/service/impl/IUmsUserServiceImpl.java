@@ -23,7 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import java.util.Date;
-
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Slf4j
@@ -65,8 +66,10 @@ public class IUmsUserServiceImpl extends ServiceImpl<UmsUserMapper, UmsUser> imp
         return baseMapper.selectOne(new LambdaQueryWrapper<UmsUser>().eq(UmsUser::getUsername, username));
     }
     @Override
-    public String executeLogin(LoginDTO dto) {
-        String token = null;
+    public HashMap<String, String> executeLogin(LoginDTO dto) {
+        HashMap<String, String> map = new HashMap<String, String>();
+        String accessToken = null;
+        String refreshToken = null;
         try {
             // 检查用户是否存在
             UmsUser user = getUserByUsername(dto.getUsername());
@@ -76,12 +79,16 @@ public class IUmsUserServiceImpl extends ServiceImpl<UmsUserMapper, UmsUser> imp
             {
                 throw new Exception("密码错误");
             }
-            // 生成token
-            token = JwtUtil.generateToken(String.valueOf(user.getUsername()));
+            // 生成access_token
+            accessToken = JwtUtil.generateAccessToken(String.valueOf(user.getUsername()));
+            // 生成refresh_token
+            refreshToken = JwtUtil.generateRefreshToken(String.valueOf(user.getUsername()));
+            map.put("access", accessToken);
+            map.put("fresh", refreshToken);
         } catch (Exception e) {
             log.warn("用户不存在or密码验证失败=======>{}", dto.getUsername());
         }
-        return token;
+        return map;
     }
     @Override
     public ProfileVO getUserProfile(String id) {

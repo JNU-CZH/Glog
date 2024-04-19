@@ -55,9 +55,6 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
     private RedisTemplate redisTemplate;
 
     @Resource
-    private TrieSensitiveFilter trieSensitiveFilter;
-
-    @Resource
     private DFASensitiveFilter dfaSensitiveFilter;
 
     @Autowired
@@ -67,6 +64,7 @@ public class IBmsPostServiceImpl extends ServiceImpl<BmsTopicMapper, BmsPost> im
         System.out.println("现在时间" + new Date());
         Page<PostVO> iPage = new Page<>();
         if (!tab.equals("hot")) { // 如果是最新数据，走数据库查询
+
             // 查询话题
             iPage = this.baseMapper.selectListAndPage(page, tab);
         } else {

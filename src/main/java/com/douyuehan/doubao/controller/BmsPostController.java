@@ -12,6 +12,7 @@ import com.douyuehan.doubao.model.vo.PostVO;
 import com.douyuehan.doubao.service.IBmsCommentService;
 import com.douyuehan.doubao.service.IBmsPostService;
 import com.douyuehan.doubao.service.IUmsUserService;
+import com.douyuehan.doubao.utils.BloomFilterUtil;
 import com.vdurmont.emoji.EmojiParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,9 @@ public class BmsPostController extends BaseController {
     @Resource
     private IUmsUserService umsUserService;
 
+    @Resource
+    private BloomFilterUtil bloomFilter;
+
     @GetMapping("/list")
     public ApiResult<Page<PostVO>> list(@RequestParam(value = "tab", defaultValue = "latest") String tab,
                                         @RequestParam(value = "pageNo", defaultValue = "1")  Integer pageNo,
@@ -53,6 +57,9 @@ public class BmsPostController extends BaseController {
             , @RequestBody CreateTopicDTO dto) {
         UmsUser user = umsUserService.getUserByUsername(userName);
         BmsPost topic = iBmsPostService.create(dto, user);
+        if (!bloomFilter.isIn(topic.getId())) {
+            bloomFilter.addItem(topic.getId());
+        }
         return ApiResult.success(topic);
     }
 
@@ -66,6 +73,10 @@ public class BmsPostController extends BaseController {
      * */
     @GetMapping()
     public ApiResult<Map<String, Object>> view(@RequestParam("id") String id, @RequestParam("username") String username) {
+        boolean isIn = bloomFilter.isIn(id);
+        if (isIn == false) {
+            return ApiResult.failed("文章不存在，请访问正确文章");
+        }
         Map<String, Object> map = iBmsPostService.viewTopic(id, username);
         return ApiResult.success(map);
     }
